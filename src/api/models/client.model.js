@@ -18,7 +18,7 @@ const userSchema = new mongoose.Schema({
 
   password: {
     type: String,
-    minlength: 6,
+    minlength: 8,
     maxlength: 128,
   },
 });
@@ -31,6 +31,14 @@ userSchema.pre("save", function (next, done) {
 
   return next();
 });
+
+
+userSchema.methods.checkPassword = function (password) {
+  return bcrypt.compareSync(
+    password,
+    this.password,
+  );
+};
 
 
 

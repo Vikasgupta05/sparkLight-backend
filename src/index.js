@@ -8,7 +8,7 @@ const app = express();
 app.use(bodyParser.json());
 app.use(cors({ origin: "*" }));
 
-mongoose.set("strictQuery", false);
+mongoose.set("strictQuery", true);
 app.use(express.json());
 const indexRouter = require("./api/routes/index");
 const { ValidationError } = require("express-validation");
