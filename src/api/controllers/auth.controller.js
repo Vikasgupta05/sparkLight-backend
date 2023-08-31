@@ -66,7 +66,7 @@ exports.login = async (req, res, next) => {
         });
       }
       const token = jwtToken.createJwtToken(user);
-      return res.json({ status: httpStatus.OK, token: token });
+      return res.json({ status: httpStatus.OK, token: token , user :user.userName  });
     }
   } catch (err) {
     return res.send(err.message);

@@ -8,6 +8,7 @@ const custumerSchema = new mongoose.Schema(
     custumerServices_id: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: "custumerService",
+      required: true
     }],
     createdDateTime: {type: String},
   },
@@ -16,4 +17,4 @@ const custumerSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
-module.exports = mongoose.model("custumer", custumerSchema);
+module.exports = mongoose.model("customer", custumerSchema);
