@@ -12,6 +12,8 @@ const staffSchema = new mongoose.Schema(
         type: mongoose.Schema.Types.ObjectId,
         ref: "custumer",
     }],
+    status: { type: String  },
+    
   },
   {
     versionKey: false,

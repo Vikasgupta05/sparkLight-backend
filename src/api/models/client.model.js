@@ -21,6 +21,23 @@ const userSchema = new mongoose.Schema({
     minlength: 8,
     maxlength: 128,
   },
+
+  role : {
+    type : String,
+    default : "custumer"
+  },
+
+  hasSubscription  : {
+    type : Boolean,
+    default : false
+  },
+
+  SubscExpDt  : {
+    type : String,
+    default : null,
+  }
+
+
 });
 
 userSchema.pre("save", function (next, done) {

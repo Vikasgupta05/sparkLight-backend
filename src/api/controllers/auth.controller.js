@@ -10,6 +10,7 @@ exports.register = async (req, res, next) => {
     let user = await User.findOne({ email: req.body.email });
     let password = req.body.password;
 
+
     if (user) {
       return res.json({
         status: "error",
@@ -66,7 +67,7 @@ exports.login = async (req, res, next) => {
         });
       }
       const token = jwtToken.createJwtToken(user);
-      return res.json({ status: httpStatus.OK, token: token , user :user.userName  });
+      return res.json({ status: httpStatus.OK, token: token , user :user.userName , role : user.role});
     }
   } catch (err) {
     return res.send(err.message);

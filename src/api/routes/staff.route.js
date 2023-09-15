@@ -4,6 +4,8 @@ const router = express.Router();
 
 router.route("/add").post(staffController.create);
 router.route("/get").get(staffController.get);
+router.route("/update").put(staffController.update);
+
 
 
 
