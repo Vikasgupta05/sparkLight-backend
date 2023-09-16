@@ -58,7 +58,11 @@ exports.login = async (req, res, next) => {
     let user = await User.findOne({ email: req.body.email });
     if (!user) {
       return res.json({ status: "error", error: "Invalid password or email" });
-    } else {
+    } 
+    else if (user.role !== req.body.role) {
+      return res.json({ status: "error", error: `Please go with ${user.role} login` });
+    }
+    else {
       const match = user.checkPassword(req.body.password);
       if (!match) {
         return res.json({
