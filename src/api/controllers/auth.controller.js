@@ -6,22 +6,45 @@ const jwtToken = require("../utils/token");
 const nodemailer = require("nodemailer");
 
 exports.register = async (req, res, next) => {
+
   try {
     let user = await User.findOne({ email: req.body.email });
+    let saloonNumber = await User.findOne({ saloonNumber: req.body.saloonNumber });
     let password = req.body.password;
-
+    let userNumber = req.body.userNumber;
+    let userEmail = req.body.email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (user) {
       return res.json({
         status: "error",
         error: "user have already register ",
       });
+    }
+    else if (userNumber.length != 10) {
+      return res.json({
+        status: "error",
+        error: "Invalid user number ",
+      });
+    } 
+    else if(!emailRegex.test(userEmail)) {
+      return res.json({
+        status: "error",
+        error: "Invalid email address ",
+      });
+    } 
+    else if(!saloonNumber) {
+      return res.json({
+        status: "error",
+        error: "Invalid saloon owner number ",
+      });
     } else if (password.length < 8) {
       return res.json({
         status: "error",
         error: "password minimum 8 chracter ! ",
       });
-    } else {
+    } 
+    else {
       user = await User.create(req.body);
       if (user) {
         var transporter = nodemailer.createTransport({

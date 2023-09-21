@@ -10,7 +10,7 @@ const Razorpay = require('razorpay');
 exports.create = async (req, res) => {
   try {
     let creeateCustService = req.body.billingServiceData;
-    const { customerName, customerPhoneNo } = req.body;
+    const { customerName, customerPhoneNo ,cashAmount , cardAmount , paytmAmount } = req.body;
     let custumerAmount = 0;
 
     creeateCustService = creeateCustService.map((item) => {
@@ -34,7 +34,11 @@ exports.create = async (req, res) => {
       customerName,
       customerPhoneNo,
       custumerAmount,
+      cashAmount,
+      cardAmount,
+      paytmAmount,
       custumerServices_id,
+
     });
     const afterCustCreate = await savedcustumer.save();
     res.status(httpStatus.CREATED);
@@ -89,6 +93,7 @@ exports.getStaff = async (req, res) => {
       },
     ];
 
+
     if (req.body.formatteStartDate != null) {
       pipeline.unshift({
         $match: {
@@ -101,12 +106,13 @@ exports.getStaff = async (req, res) => {
     }
 
     const testData = await Custumer.aggregate(pipeline);
+    console.log("pipeline" , testData)
 
     staffs.map((item) => {
       const foundObject = testData.find((obj) => {
         return obj._id.equals(item._id);
       });
-      if (!foundObject) {
+      if (foundObject) {
         testData.push({
           _id: item._id,
           staffName: item.staffName,
@@ -120,6 +126,9 @@ exports.getStaff = async (req, res) => {
   } catch (err) {
     return res.status(500).send(err.message);
   }
+
+
+  
 };
 
 exports.getServiceCount = async (req, res) => {

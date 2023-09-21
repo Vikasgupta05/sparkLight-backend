@@ -12,11 +12,11 @@ const custumerSchema = new mongoose.Schema(
       ref: "custumerService",
       required: true
     }],
-    // payment_id: [{
-    //   type: mongoose.Schema.Types.ObjectId,
-    //   ref: "payment",
-    //   required: true
-    // }],
+    cashAmount: { type: String , default : 0 },
+    cardAmount: { type: String , default : 0},
+    paytmAmount: { type: String , default : 0 },
+
+
     createdDateTime: {type: String},
   },
   {

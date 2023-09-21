@@ -27,6 +27,34 @@ const userSchema = new mongoose.Schema({
     default : "custumer"
   },
 
+  userNumber: {
+    type: String,
+  },
+
+  saloonNumber : {
+    type: String,
+  },
+
+  adminNumber : {
+    type: String,
+  },
+
+  state : {
+    type: String,
+  },
+
+  city : {
+    type: String,
+  },
+
+  bussinessName : {
+    type: String,
+  },
+
+  bussinessNumber : {
+    type: String,
+  },
+
   hasSubscription  : {
     type : Boolean,
     default : false
