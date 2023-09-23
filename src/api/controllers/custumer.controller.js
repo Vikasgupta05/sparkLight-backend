@@ -2,6 +2,7 @@ const Custumer = require("../models/custumer.model");
 const CustumerService = require("../models/custumerService.model");
 const Staff = require("../models/staff.model");
 const httpStatus = require("http-status");
+const mongoose = require("mongoose");
 
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -48,17 +49,12 @@ exports.create = async (req, res) => {
   }
 };
 
-exports.getStaff = async (req, res) => {
-  try {
-    const staffs = await Staff.find();
-    const startDate = new Date(req.body.formatteStartDate);
-    const endDate = new Date(req.body.formattEndDate);
-    const startDateString = new Date(startDate);
-    startDateString.setDate(startDate.getDate() + 1);
-    const updatedStartDateString = startDateString.toISOString();
-    const FinalStartDateString = new Date(updatedStartDateString);
 
-    const pipeline = [
+
+exports.getStaffWithDetails = async (req, res) => {
+  const staffId = req.body.staffId
+  try {
+    const testDatas = await Custumer.aggregate([
       {
         $lookup: {
           from: "custumerservices",
@@ -68,7 +64,15 @@ exports.getStaff = async (req, res) => {
         },
       },
       {
-        $unwind: "$custumerServices",
+        $unwind: {
+          path: "$custumerServices",
+          preserveNullAndEmptyArrays: true 
+        },
+      },
+      {
+        $match: {
+          "custumerServices.staff_id": mongoose.Types.ObjectId(`${staffId}`)
+        }
       },
       {
         $lookup: {
@@ -79,34 +83,165 @@ exports.getStaff = async (req, res) => {
         },
       },
       {
-        $unwind: "$staffs",
+        $unwind: {
+          path: "$staffs",
+          preserveNullAndEmptyArrays: true 
+        },
+      },
+
+      {
+        $addFields: {
+          "custumerServices.customerPhoneNo": "$customerPhoneNo",
+          "custumerServices.customerName": "$customerName",
+        },
       },
       {
         $group: {
           _id: "$custumerServices.staff_id",
           staffName: { $first: "$staffs.staffName" },
-          numCustomers: { $sum: 1 },
+          numCustomers: {
+            $sum: {
+              $cond: [
+                { $ifNull: ["$custumerServices", false] },
+                1,
+                0
+              ]
+            }
+          },
+          totalService: { $push: "$custumerServices" },
+          totalName: { $push: "$customerName" },
           totalAmount: { $sum: { $toInt: "$custumerServices.servicePrice" } },
           serviceCreatedAt: { $min: "$custumerServices.createdAt" },
-          status : { $first: "$staffs.status" },
+          status: { $first: "$staffs.status" },
         },
       },
-    ];
+      {
+            $project: {
+              _id: 1,
+              staffName: 1,
+              numCustomers: 1,
+              totalAmount: 1,
+              serviceCreatedAt: 1,
+              status: 1,
+              totalService:1,
+            }
+          }
+    ]);
+    return res.send(testDatas);
+  } catch (err) {
+    return res.status(500).send(err.message);
+  }
+};
 
 
-    if (req.body.formatteStartDate != null) {
-      pipeline.unshift({
-        $match: {
-          createdAt: {
-            $gte: FinalStartDateString,
-            $lte: endDate,
-          },
+
+
+exports.getStaff = async (req, res) => {
+  try {
+    const staffs = await Staff.find();
+    // const startDate = new Date(req.body.formatteStartDate);
+    // const endDate = new Date(req.body.formattEndDate);
+    // const startDateString = new Date(startDate);
+    // startDateString.setDate(startDate.getDate() + 1);
+    // const updatedStartDateString = startDateString.toISOString();
+    // const FinalStartDateString = new Date(updatedStartDateString);
+
+    // const pipeline = [
+    //   {
+    //     $lookup: {
+    //       from: "custumerservices",
+    //       localField: "custumerServices_id",
+    //       foreignField: "_id",
+    //       as: "custumerServices",
+    //     },
+    //   },
+    //   {
+    //     $unwind: "$custumerServices",
+    //   },
+    //   {
+    //     $lookup: {
+    //       from: "staffs",
+    //       localField: "custumerServices.staff_id",
+    //       foreignField: "_id",
+    //       as: "staffs",
+    //     },
+    //   },
+    //   {
+    //     $unwind: "$staffs",
+    //   },
+    //   {
+    //     $group: {
+    //       _id: "$custumerServices.staff_id",
+    //       staffName: { $first: "$staffs.staffName" },
+    //       numCustomers: { $sum: 1 },
+    //       totalAmount: { $sum: { $toInt: "$custumerServices.servicePrice" } },
+    //       serviceCreatedAt: { $min: "$custumerServices.createdAt" },
+    //       status : { $first: "$staffs.status" },
+    //     },
+    //   },
+    // ];
+
+
+    // if (req.body.formatteStartDate != null) {
+    //   pipeline.unshift({
+    //     $match: {
+    //       createdAt: {
+    //         $gte: FinalStartDateString,
+    //         $lte: endDate,
+    //       },
+    //     },
+    //   });
+    // }
+
+    // const testData = await Custumer.aggregate(pipeline);
+
+    const testData = await Staff.aggregate([
+      {
+        $lookup: {
+          from: "custumerservices",
+          localField: "_id",
+          foreignField: "staff_id",
+          as: "custumerServices",
         },
-      });
-    }
+      },
+      {
+        $unwind: {
+          path: "$custumerServices",
+          preserveNullAndEmptyArrays: true 
+        },
+      },
+      {
+        $group: {
+          _id: "$_id",
+          staffName: { $first: "$staffName" },
+          numCustomers: {
+            $sum: {
+              $cond: [
+                { $ifNull: ["$custumerServices", false] },
+                1,
+                0
+              ]
+            }
+          },
+          totalAmount: { $sum: { $toInt: "$custumerServices.servicePrice" } },
+          serviceCreatedAt: { $min: "$custumerServices.createdAt" },
+          status : { $first: "$status" },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          staffName: 1,
+          numCustomers: 1,
+          totalAmount: 1,
+          serviceCreatedAt: 1,
+          status: 1
+        }
+      }
+    ])
 
-    const testData = await Custumer.aggregate(pipeline);
-    console.log("pipeline" , testData)
+    return res.send(testData); 
+    console.log("testData" , testData)
 
     staffs.map((item) => {
       const foundObject = testData.find((obj) => {
@@ -130,6 +265,92 @@ exports.getStaff = async (req, res) => {
 
   
 };
+
+
+// exports.getStaff = async (req, res) => {
+//   try {
+//     // const staffs = await Staff.find();
+//     // const startDate = new Date(req.body.formatteStartDate);
+//     // const endDate = new Date(req.body.formattEndDate);
+//     // const startDateString = new Date(startDate);
+//     // startDateString.setDate(startDate.getDate() + 1);
+//     // const updatedStartDateString = startDateString.toISOString();
+//     // const FinalStartDateString = new Date(updatedStartDateString);
+
+//     const pipeline = [
+//       {
+//         $lookup: {
+//           from: "custumerservices",
+//           localField: "custumerServices_id",
+//           foreignField: "_id",
+//           as: "custumerServices",
+//         },
+//       },
+//       {
+//         $unwind: "$custumerServices",
+//       },
+//       {
+//         $lookup: {
+//           from: "staffs",
+//           localField: "custumerServices.staff_id",
+//           foreignField: "_id",
+//           as: "staffs",
+//         },
+//       },
+//       {
+//         $unwind: "$staffs",
+//       },
+//       {
+//         $group: {
+//           _id: "$custumerServices.staff_id",
+//           staffName: { $first: "$staffs.staffName" },
+//           numCustomers: { $sum: 1 },
+//           totalAmount: { $sum: { $toInt: "$custumerServices.servicePrice" } },
+//           serviceCreatedAt: { $min: "$custumerServices.createdAt" },
+//           status : { $first: "$staffs.status" },
+//         },
+//       },
+//     ];
+
+
+//     // if (req.body.formatteStartDate != null) {
+//     //   pipeline.unshift({
+//     //     $match: {
+//     //       createdAt: {
+//     //         $gte: FinalStartDateString,
+//     //         $lte: endDate,
+//     //       },
+//     //     },
+//     //   });
+//     // }
+
+//     const testData = await Custumer.aggregate(pipeline);
+//     // console.log("pipeline" , testData)
+
+//     // staffs.map((item) => {
+//     //   const foundObject = testData.find((obj) => {
+//     //     return obj._id.equals(item._id);
+//     //   });
+//     //   if (foundObject) {
+//     //     testData.push({
+//     //       _id: item._id,
+//     //       staffName: item.staffName,
+//     //       numCustomers: 0,
+//     //       totalAmount: 0,
+//     //     });
+//     //   }
+//     //   return item;
+//     // });
+//     return res.send(testData);
+//   } catch (err) {
+//     return res.status(500).send(err.message);
+//   }
+
+
+  
+// };
+
+
 
 exports.getServiceCount = async (req, res) => {
   try {

@@ -12,7 +12,7 @@ const staffSchema = new mongoose.Schema(
         type: mongoose.Schema.Types.ObjectId,
         ref: "custumer",
     }],
-    status: { type: String  },
+    status: { type: String , default : "online"  },
     
   },
   {
