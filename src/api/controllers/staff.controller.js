@@ -17,6 +17,7 @@ exports.create = async (req, res) => {
 
 
 exports.get = async (req, res) => {
+  const id = req?.params?.id
   try {
     const staff = await Staff.find()
     return res.send(staff);

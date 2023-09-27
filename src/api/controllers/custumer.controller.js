@@ -11,7 +11,7 @@ const Razorpay = require('razorpay');
 exports.create = async (req, res) => {
   try {
     let creeateCustService = req.body.billingServiceData;
-    const { customerName, customerPhoneNo ,cashAmount , cardAmount , paytmAmount } = req.body;
+    const { customerName, customerPhoneNo ,cashAmount , cardAmount , paytmAmount ,owner_id } = req.body;
     let custumerAmount = 0;
 
     creeateCustService = creeateCustService.map((item) => {
@@ -20,6 +20,8 @@ exports.create = async (req, res) => {
         servicePrice: item.servicePrice,
         serviceType: item.serviceType,
         staff_id: item.staff_id,
+        customerName : item.customerName,
+        customerPhoneNo : item.customerPhoneNo,
       };
     });
 
@@ -39,6 +41,7 @@ exports.create = async (req, res) => {
       cardAmount,
       paytmAmount,
       custumerServices_id,
+      owner_id
 
     });
     const afterCustCreate = await savedcustumer.save();
@@ -127,7 +130,10 @@ exports.getStaffWithDetails = async (req, res) => {
             }
           }
     ]);
+
     return res.send(testDatas);
+    
+    
   } catch (err) {
     return res.status(500).send(err.message);
   }
@@ -195,7 +201,19 @@ exports.getStaff = async (req, res) => {
 
     // const testData = await Custumer.aggregate(pipeline);
 
+    const id = req.body.id
+
+
+
+
     const testData = await Staff.aggregate([
+
+      {
+        $match: {
+          owner_id: id 
+        }
+      },
+      
       {
         $lookup: {
           from: "custumerservices",
@@ -210,10 +228,13 @@ exports.getStaff = async (req, res) => {
           preserveNullAndEmptyArrays: true 
         },
       },
+
+      
       {
         $group: {
           _id: "$_id",
           staffName: { $first: "$staffName" },
+          owner_id : {$first: "$owner_id"},
           numCustomers: {
             $sum: {
               $cond: [
@@ -223,6 +244,7 @@ exports.getStaff = async (req, res) => {
               ]
             }
           },
+          totalService: { $push: "$custumerServices" },
           totalAmount: { $sum: { $toInt: "$custumerServices.servicePrice" } },
           serviceCreatedAt: { $min: "$custumerServices.createdAt" },
           status : { $first: "$status" },
@@ -235,29 +257,31 @@ exports.getStaff = async (req, res) => {
           numCustomers: 1,
           totalAmount: 1,
           serviceCreatedAt: 1,
-          status: 1
+          status: 1,
+          totalService : 1,
+          owner_id : 1
         }
       }
     ])
 
+    // console.log("testData" , testData)
     return res.send(testData); 
-    console.log("testData" , testData)
 
-    staffs.map((item) => {
-      const foundObject = testData.find((obj) => {
-        return obj._id.equals(item._id);
-      });
-      if (foundObject) {
-        testData.push({
-          _id: item._id,
-          staffName: item.staffName,
-          numCustomers: 0,
-          totalAmount: 0,
-        });
-      }
-      return item;
-    });
-    return res.send(testData);
+    // staffs.map((item) => {
+    //   const foundObject = testData.find((obj) => {
+    //     return obj._id.equals(item._id);
+    //   });
+    //   if (foundObject) {
+    //     testData.push({
+    //       _id: item._id,
+    //       staffName: item.staffName,
+    //       numCustomers: 0,
+    //       totalAmount: 0,
+    //     });
+    //   }
+    //   return item;
+    // });
+    // return res.send(testData);
   } catch (err) {
     return res.status(500).send(err.message);
   }
@@ -389,8 +413,9 @@ exports.getServiceCount = async (req, res) => {
 };
 
 exports.get = async (req, res) => {
+  const id = req.params.id
   try {
-    const custumer = await Custumer.find()
+    const custumer = await Custumer.find({ owner_id: id })
       .populate({
         path: "custumerServices_id",
         populate: {
@@ -426,6 +451,24 @@ exports.razerpay = async (req, res) => {
       return res.send(order);
     });  
    
+  } catch (err) {
+    return res.status(500).send(err.message);
+  }
+};
+
+
+exports.delete = async (req, res) => {
+  try {
+    const _id = req.params.id;
+    const custumer = await Custumer.findByIdAndDelete(_id);
+    if (custumer) {
+      return res.send(custumer);
+    } else {
+      return res.json({
+        status: "error",
+        error: "custumer not found!",
+      });
+    }
   } catch (err) {
     return res.status(500).send(err.message);
   }

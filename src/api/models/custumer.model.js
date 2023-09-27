@@ -1,12 +1,16 @@
 const mongoose = require("mongoose");
 
+let todayData = new Date()
+
 const custumerSchema = new mongoose.Schema(
+
+
   {
     customerName: { type: String, required: true },
     customerPhoneNo: { type: String, required: true },
     custumerAmount: { type: String, required: true },
     status: { type: String , default :"customer" },
-
+    owner_id: { type: String },
     custumerServices_id: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: "custumerService",
@@ -15,9 +19,10 @@ const custumerSchema = new mongoose.Schema(
     cashAmount: { type: String , default : 0 },
     cardAmount: { type: String , default : 0},
     paytmAmount: { type: String , default : 0 },
+    notiStatus : { type: String },
 
 
-    createdDateTime: {type: String},
+    createdDateTime: {type: String , default :todayData},
   },
   {
     versionKey: false,

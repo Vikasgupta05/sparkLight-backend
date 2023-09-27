@@ -35,6 +35,17 @@ const userSchema = new mongoose.Schema({
     type: String,
   },
 
+
+  Owner_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "user",
+  },
+
+  Admin_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "user",
+  },
+
   adminNumber : {
     type: String,
   },
@@ -51,7 +62,7 @@ const userSchema = new mongoose.Schema({
     type: String,
   },
 
-  bussinessNumber : {
+  bussinessName : {
     type: String,
   },
 
