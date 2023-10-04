@@ -7,6 +7,8 @@ const router = express.Router();
 
 
 
+router.route("/update").put(controller.update);
+router.route("/getadmindata").get(controller.getAdminData);
 router.route("/get").get(controller.get);
 router.route("/login").post(validate(login, {}, {}), controller.login);
 router.route("/register").post(validate(register, {}, {}), controller.register);

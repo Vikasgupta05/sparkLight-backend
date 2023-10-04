@@ -3,13 +3,18 @@ const CustumerService = require("../models/custumerService.model");
 const Staff = require("../models/staff.model");
 const httpStatus = require("http-status");
 const mongoose = require("mongoose");
-
+const wbm = require('wbm');
 const express = require('express');
 const bodyParser = require('body-parser');
 const Razorpay = require('razorpay');
 
+const { sendMsg } = require("../utils/msgSend");
+
+
 exports.create = async (req, res) => {
   try {
+
+
     let creeateCustService = req.body.billingServiceData;
     const { customerName, customerPhoneNo ,cashAmount , cardAmount , paytmAmount ,owner_id } = req.body;
     let custumerAmount = 0;
@@ -44,9 +49,13 @@ exports.create = async (req, res) => {
       owner_id
 
     });
+
     const afterCustCreate = await savedcustumer.save();
     res.status(httpStatus.CREATED);
     res.send(afterCustCreate);
+    if(afterCustCreate){
+      sendMsg(req.body)
+    }
   } catch (err) {
     return res.status(500).send(err.message);
   }
@@ -58,6 +67,24 @@ exports.getStaffWithDetails = async (req, res) => {
   const staffId = req.body.staffId
   try {
     const testDatas = await Custumer.aggregate([
+
+      {
+        $lookup: {
+          from: "staffs",
+          localField: "custumerServices.staff_id",
+          foreignField: "_id",
+          as: "staffs",
+        },
+      },
+      {
+        $unwind: {
+          path: "$staffs",
+          preserveNullAndEmptyArrays: true 
+        },
+      },
+
+
+      
       {
         $lookup: {
           from: "custumerservices",
@@ -77,27 +104,8 @@ exports.getStaffWithDetails = async (req, res) => {
           "custumerServices.staff_id": mongoose.Types.ObjectId(`${staffId}`)
         }
       },
-      {
-        $lookup: {
-          from: "staffs",
-          localField: "custumerServices.staff_id",
-          foreignField: "_id",
-          as: "staffs",
-        },
-      },
-      {
-        $unwind: {
-          path: "$staffs",
-          preserveNullAndEmptyArrays: true 
-        },
-      },
-
-      {
-        $addFields: {
-          "custumerServices.customerPhoneNo": "$customerPhoneNo",
-          "custumerServices.customerName": "$customerName",
-        },
-      },
+      
+      
       {
         $group: {
           _id: "$custumerServices.staff_id",
@@ -424,6 +432,10 @@ exports.get = async (req, res) => {
       })
       .lean()
       .exec();
+
+
+    
+
     return res.send(custumer);
   } catch (err) {
     return res.status(500).send(err.message);

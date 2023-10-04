@@ -74,6 +74,10 @@ const userSchema = new mongoose.Schema({
   SubscExpDt  : {
     type : String,
     default : null,
+  },
+
+  ActiveStatus : {
+    type : String,
   }
 
 

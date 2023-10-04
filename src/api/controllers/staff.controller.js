@@ -63,3 +63,76 @@ exports.delete = async (req, res) => {
 
 
 
+exports.getadminStaff = async (req, res) => {
+  try {
+    const id = req.body.id
+    const testData = await Staff.aggregate([
+
+      {
+        $match: {
+          owner_id: {
+            $in: ["651030bdcb9274e131c0bc78", "651030fbcb9274e131c0bc7e"],
+          },
+        },
+      },
+      
+      {
+        $lookup: {
+          from: "custumerservices",
+          localField: "_id",
+          foreignField: "staff_id",
+          as: "custumerServices",
+        },
+      },
+      {
+        $unwind: {
+          path: "$custumerServices",
+          preserveNullAndEmptyArrays: true 
+        },
+      },
+
+      
+      {
+        $group: {
+          _id: "$_id",
+          staffName: { $first: "$staffName" },
+          owner_id : {$first: "$owner_id"},
+          numCustomers: {
+            $sum: {
+              $cond: [
+                { $ifNull: ["$custumerServices", false] },
+                1,
+                0
+              ]
+            }
+          },
+          totalService: { $push: "$custumerServices" },
+          totalAmount: { $sum: { $toInt: "$custumerServices.servicePrice" } },
+          serviceCreatedAt: { $min: "$custumerServices.createdAt" },
+          status : { $first: "$status" },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          staffName: 1,
+          numCustomers: 1,
+          totalAmount: 1,
+          serviceCreatedAt: 1,
+          status: 1,
+          totalService : 1,
+          owner_id : 1
+        }
+      }
+    ])
+
+    // console.log("testData" , testData)
+    return res.send(testData); 
+
+  } catch (err) {
+    return res.status(500).send(err.message);
+  }
+};
+
+
+
