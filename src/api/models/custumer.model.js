@@ -20,8 +20,7 @@ const custumerSchema = new mongoose.Schema(
     cardAmount: { type: String , default : 0},
     paytmAmount: { type: String , default : 0 },
     notiStatus : { type: String },
-
-
+    activeStatus :{ type: String , default :"online" },
     createdDateTime: {type: String , default :todayData},
   },
   {

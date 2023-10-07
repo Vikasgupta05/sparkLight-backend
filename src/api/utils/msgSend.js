@@ -6,7 +6,7 @@ const client = require('twilio')(accountSid, authToken);
 
     
     const sendMsg = (reqBody) => {
-        const servicePrices = reqBody?.billingServiceData?.map(item => item.servicePrice);
+        const servicePrices = reqBody?.billingServiceData.map(item => item.servicePrice);
         const totalServicePrice = servicePrices.reduce((total, price) => total + price, 0);
         try {
             client.messages.create({

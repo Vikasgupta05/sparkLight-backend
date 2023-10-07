@@ -14,11 +14,11 @@ exports.create = async (req, res) => {
   try {
 
 
-    let creeateCustService = req.body.billingServiceData;
-    const { customerName, customerPhoneNo ,cashAmount , cardAmount , paytmAmount ,owner_id } = req.body;
+    let creeateCustService = req?.body?.billingServiceData;
+    const { customerName, customerPhoneNo ,cashAmount , cardAmount , paytmAmount ,owner_id } = req?.body;
     let custumerAmount = 0;
 
-    creeateCustService = creeateCustService.map((item) => {
+    creeateCustService = creeateCustService?.map((item) => {
       return {
         serviceName: item.serviceName,
         servicePrice: item.servicePrice,
@@ -28,6 +28,7 @@ exports.create = async (req, res) => {
         customerPhoneNo : item.customerPhoneNo,
       };
     });
+
 
     const aftercreateCustumerService = await CustumerService.insertMany(
       creeateCustService
@@ -52,9 +53,9 @@ exports.create = async (req, res) => {
     const afterCustCreate = await savedcustumer.save();
     res.status(httpStatus.CREATED);
     res.send(afterCustCreate);
-    if(afterCustCreate){
-      sendMsg(req.body)
-    }
+    // if(afterCustCreate){
+    //   sendMsg(req.body)
+    // }
   } catch (err) {
     return res.status(500).send(err.message);
   }
@@ -431,13 +432,21 @@ exports.get = async (req, res) => {
       })
       .lean()
       .exec();
-
-
-    
-
     return res.send(custumer);
   } catch (err) {
     return res.status(500).send(err.message);
+  }
+};
+
+exports.update =  async (req, res) => {
+  try{
+    const custumer = await Custumer.findByIdAndUpdate(req.body._id,
+      { $set: { activeStatus: req.body.activeStatus }},
+      {new:true})
+    res.send(custumer)
+  }
+  catch(err){
+    res.send(err.message);
   }
 };
 

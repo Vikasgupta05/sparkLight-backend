@@ -251,8 +251,6 @@ exports.getAdminData = async (req, res) => {
             }
           }
         },
-
-
         {
           $group: {
             _id: "$owner_id",
@@ -272,6 +270,38 @@ exports.getAdminData = async (req, res) => {
     ]);
 
 
+    const topRevenue = await Custumer.aggregate([
+      {
+        $match: {
+          owner_id: {
+            $in: ["651030bdcb9274e131c0bc78", "651030fbcb9274e131c0bc7e"]
+          }
+        }
+      },
+      {
+        $group: {
+          _id: "$owner_id",
+          totalAmount: { $sum: { $toInt: "$custumerAmount" } },
+          walkin: { $sum: 1 },
+        }
+      },
+      {
+        $match: {
+          totalAmount: { $gt: 3000 } 
+        }
+      },
+      {
+        $project: {
+          owner_id: "$_id",
+          totalAmount: 1,
+          walkin: 1,
+          _id: 0
+        }
+      }
+    ]);
+    
+    
+
     const today = new Date();
     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     const lastDayOfMonth = new Date(
@@ -279,7 +309,6 @@ exports.getAdminData = async (req, res) => {
       today.getMonth() + 1,
       0
     );
-
     const CurrentMonthRevenue = await Custumer.aggregate([
       {
         $match: {
@@ -297,13 +326,38 @@ exports.getAdminData = async (req, res) => {
           _id: "$owner_id",
           totalAmount: { $sum: { $toInt: "$custumerAmount" } },
           walkinMonth: { $sum: 1 },
-
         },
       },
-
       
     ]);
 
+
+    const formattedToday = today.toISOString().split('T')[0];
+    const CurrentDayRevenue = await Custumer.aggregate([
+      {
+        $match: {
+          owner_id: {
+            $in: ["651030bdcb9274e131c0bc78", "651030fbcb9274e131c0bc7e"],
+          },
+          $expr: {
+            $eq: [
+              {
+                $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
+              },
+              formattedToday
+            ]
+          }
+        },
+      },
+      {
+        $group: {
+          _id: "$owner_id",
+          totalAmount: { $sum: { $toInt: "$custumerAmount" } },
+          walkinMonth: { $sum: 1 },
+        },
+      },
+    ]);
+    
 
     const totalMonthRavenue = CurrentMonthRevenue.reduce(
       (total , item) => total + item.totalAmount,
@@ -311,6 +365,16 @@ exports.getAdminData = async (req, res) => {
     );
 
     const walkinMonth = CurrentMonthRevenue.reduce(
+      (total , item) => total + item.walkinMonth,
+      0,
+    );
+
+    const totalDayRavenue = CurrentDayRevenue.reduce(
+      (total , item) => total + item.totalAmount,
+      0,
+    );
+
+    const walkinDay = CurrentDayRevenue.reduce(
       (total , item) => total + item.walkinMonth,
       0,
     );
@@ -331,8 +395,12 @@ exports.getAdminData = async (req, res) => {
       totalRavenue,
       walkinMonth,
       totalwalkin,
-
-      testDatas
+      totalDayRavenue,
+      walkinDay,
+      
+      CurrentDayRevenue,
+      testDatas,
+      topRevenue
     }]);
   } catch (err) {
     return res.status(500).send(err.message);
