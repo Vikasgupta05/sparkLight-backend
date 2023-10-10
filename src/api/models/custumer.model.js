@@ -10,7 +10,11 @@ const custumerSchema = new mongoose.Schema(
     customerPhoneNo: { type: String, required: true },
     custumerAmount: { type: String, required: true },
     status: { type: String , default :"customer" },
-    owner_id: { type: String },
+    owner_id: { 
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "user",
+      required: true
+    },
     custumerServices_id: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: "custumerService",

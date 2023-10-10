@@ -7,7 +7,11 @@ const staffSchema = new mongoose.Schema(
     staffName: { type: String },
     totalCustumer: { type: String },
     totalSale: { type: String },
-    owner_id: { type: String },
+    owner_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "user",
+    },
+
     custumer_id: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: "custumer",

@@ -62,10 +62,6 @@ const userSchema = new mongoose.Schema({
     type: String,
   },
 
-  bussinessName : {
-    type: String,
-  },
-
   hasSubscription  : {
     type : Boolean,
     default : false

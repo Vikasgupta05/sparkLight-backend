@@ -17,8 +17,9 @@ exports.create = async (req, res) => {
 
 
 exports.get = async (req, res) => {
+  const id = req.params.id
   try {
-    const notification = await Notification.find()
+    const notification = await Notification.find({ Owner_id: id })
     return res.send(notification);
   } catch (err) {
     return res.status(500).send(err.message);

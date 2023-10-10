@@ -6,6 +6,7 @@ const httpStatus = require("http-status");
 const jwtToken = require("../utils/token");
 const nodemailer = require("nodemailer");
 const mongoose = require("mongoose");
+const { ObjectId } = require('mongodb');
 
 exports.register = async (req, res, next) => {
   try {
@@ -243,19 +244,40 @@ exports.getAdminData = async (req, res) => {
 
 
   try {
+    let owner_id  = {
+        $in: [
+          ObjectId("651030bdcb9274e131c0bc78"),
+          ObjectId("651030fbcb9274e131c0bc7e")
+        ]
+      }
     const testDatas = await Custumer.aggregate([
-        {
-          $match: {
-            owner_id: {
-              $in: ["651030bdcb9274e131c0bc78", "651030fbcb9274e131c0bc7e"]
-            }
-          }
+      {
+        $lookup: {
+          from: "users",
+          localField: "owner_id",
+          foreignField: "_id",
+          as: "users",
         },
+      },
+      {
+        $unwind: {
+          path: "$users",
+          preserveNullAndEmptyArrays: true 
+        },
+      },
+      {
+        $match: {
+          owner_id: owner_id
+        }
+      },
         {
           $group: {
             _id: "$owner_id",
             totalAmount: { $sum: { $toInt: "$custumerAmount" } },
             walkin: { $sum: 1 },
+            ownerName: { $first: "$users.userName" },
+            bussinessName: { $first: "$users.bussinessName" },
+            city: { $first: "$users.city" },
           }
         },
 
@@ -264,6 +286,9 @@ exports.getAdminData = async (req, res) => {
             owner_id: "$_id",
             totalAmount: 1,
             walkin:1,
+            ownerName: 1,
+            bussinessName:1,
+            city: 1,
             _id: 0
           }
         }
@@ -272,15 +297,31 @@ exports.getAdminData = async (req, res) => {
 
     const topRevenue = await Custumer.aggregate([
       {
+        $lookup: {
+          from: "users",
+          localField: "owner_id",
+          foreignField: "_id",
+          as: "users",
+        },
+      },
+      {
+        $unwind: {
+          path: "$users",
+          preserveNullAndEmptyArrays: true 
+        },
+      },
+
+      {
         $match: {
-          owner_id: {
-            $in: ["651030bdcb9274e131c0bc78", "651030fbcb9274e131c0bc7e"]
-          }
+          owner_id: owner_id
         }
       },
       {
         $group: {
           _id: "$owner_id",
+          ownerName: { $first: "$users.userName" },
+          bussinessName: { $first: "$users.bussinessName" },
+          city: { $first: "$users.city" },
           totalAmount: { $sum: { $toInt: "$custumerAmount" } },
           walkin: { $sum: 1 },
         }
@@ -293,6 +334,9 @@ exports.getAdminData = async (req, res) => {
       {
         $project: {
           owner_id: "$_id",
+          ownerName: 1,
+          bussinessName:1,
+          city: 1,
           totalAmount: 1,
           walkin: 1,
           _id: 0
@@ -312,9 +356,7 @@ exports.getAdminData = async (req, res) => {
     const CurrentMonthRevenue = await Custumer.aggregate([
       {
         $match: {
-          owner_id: {
-            $in: ["651030bdcb9274e131c0bc78", "651030fbcb9274e131c0bc7e"],
-          },
+          owner_id: owner_id,
           createdAt: {
             $gte: firstDayOfMonth,
             $lte: lastDayOfMonth,
@@ -335,10 +377,23 @@ exports.getAdminData = async (req, res) => {
     const formattedToday = today.toISOString().split('T')[0];
     const CurrentDayRevenue = await Custumer.aggregate([
       {
+        $lookup: {
+          from: "users",
+          localField: "owner_id",
+          foreignField: "_id",
+          as: "users",
+        },
+      },
+      {
+        $unwind: {
+          path: "$users",
+          preserveNullAndEmptyArrays: true 
+        },
+      },
+
+      {
         $match: {
-          owner_id: {
-            $in: ["651030bdcb9274e131c0bc78", "651030fbcb9274e131c0bc7e"],
-          },
+          owner_id: owner_id,
           $expr: {
             $eq: [
               {
@@ -354,6 +409,9 @@ exports.getAdminData = async (req, res) => {
           _id: "$owner_id",
           totalAmount: { $sum: { $toInt: "$custumerAmount" } },
           walkinMonth: { $sum: 1 },
+          ownerName: { $first: "$users.userName" },
+          bussinessName: { $first: "$users.bussinessName" },
+          city: { $first: "$users.city" },
         },
       },
     ]);
@@ -397,7 +455,6 @@ exports.getAdminData = async (req, res) => {
       totalwalkin,
       totalDayRavenue,
       walkinDay,
-      
       CurrentDayRevenue,
       testDatas,
       topRevenue

@@ -6,7 +6,7 @@ const mongoose = require("mongoose");
 const express = require('express');
 const bodyParser = require('body-parser');
 const Razorpay = require('razorpay');
-
+const { ObjectId } = require('mongodb');
 const { sendMsg } = require("../utils/msgSend");
 
 
@@ -215,10 +215,10 @@ exports.getStaff = async (req, res) => {
 
 
     const testData = await Staff.aggregate([
-
+      
       {
         $match: {
-          owner_id: id 
+          owner_id:  ObjectId(id)
         }
       },
       
@@ -269,7 +269,10 @@ exports.getStaff = async (req, res) => {
           totalService : 1,
           owner_id : 1
         }
-      }
+      },
+      {
+        $sort: { totalAmount: -1 } 
+      },
     ])
 
     // console.log("testData" , testData)

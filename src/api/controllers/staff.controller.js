@@ -1,5 +1,6 @@
 const Staff = require("../models/staff.model");
 const httpStatus = require("http-status");
+const { ObjectId } = require('mongodb');
 
 
 exports.create = async (req, res) => {
@@ -12,7 +13,6 @@ exports.create = async (req, res) => {
     return res.status(500).send(err.message);
   }
 };
-
 
 
 
@@ -65,17 +65,36 @@ exports.delete = async (req, res) => {
 
 exports.getadminStaff = async (req, res) => {
   try {
-    const id = req.body.id
+    const today = new Date();
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  
+    const id = req.body.id;
     const testData = await Staff.aggregate([
-
+      {
+        $lookup: {
+          from: "users",
+          localField: "owner_id",
+          foreignField: "_id",
+          as: "users",
+        },
+      },
+      {
+        $unwind: {
+          path: "$users",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
       {
         $match: {
           owner_id: {
-            $in: ["651030bdcb9274e131c0bc78", "651030fbcb9274e131c0bc7e"],
+            $in: [
+              ObjectId("651030bdcb9274e131c0bc78"),
+              ObjectId("651030fbcb9274e131c0bc7e"),
+            ],
           },
         },
       },
-      
       {
         $lookup: {
           from: "custumerservices",
@@ -87,29 +106,34 @@ exports.getadminStaff = async (req, res) => {
       {
         $unwind: {
           path: "$custumerServices",
-          preserveNullAndEmptyArrays: true 
+          preserveNullAndEmptyArrays: true,
         },
       },
-
-      
+      {
+        $match: {
+          "custumerServices.createdAt": {
+            $gte: firstDayOfMonth,
+            $lte: lastDayOfMonth,
+          },
+        },
+      },
       {
         $group: {
           _id: "$_id",
           staffName: { $first: "$staffName" },
-          owner_id : {$first: "$owner_id"},
+          owner_id: { $first: "$owner_id" },
           numCustomers: {
             $sum: {
-              $cond: [
-                { $ifNull: ["$custumerServices", false] },
-                1,
-                0
-              ]
-            }
+              $cond: [{ $ifNull: ["$custumerServices", false] }, 1, 0],
+            },
           },
           totalService: { $push: "$custumerServices" },
           totalAmount: { $sum: { $toInt: "$custumerServices.servicePrice" } },
           serviceCreatedAt: { $min: "$custumerServices.createdAt" },
-          status : { $first: "$status" },
+          status: { $first: "$status" },
+          ownerName: { $first: "$users.userName" },
+          bussinessName: { $first: "$users.bussinessName" },
+          city: { $first: "$users.city" },
         },
       },
       {
@@ -120,15 +144,19 @@ exports.getadminStaff = async (req, res) => {
           totalAmount: 1,
           serviceCreatedAt: 1,
           status: 1,
-          totalService : 1,
-          owner_id : 1
-        }
-      }
-    ])
-
-    // console.log("testData" , testData)
-    return res.send(testData); 
-
+          totalService: 1,
+          owner_id: 1,
+          ownerName: 1,
+          bussinessName: 1,
+          city: 1,
+        },
+      },
+      {
+        $sort: { totalAmount: -1 } // Sort by totalAmount in descending order
+      },
+    ]);
+  
+    return res.send(testData);
   } catch (err) {
     return res.status(500).send(err.message);
   }
