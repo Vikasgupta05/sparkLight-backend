@@ -240,12 +240,14 @@ exports.adminRegister = async (req, res, next) => {
 };
 
 exports.getAdminData = async (req, res) => {
-  // const id = req.params.id
+  const id = req.body
 
-
+  console.log(id)
   try {
     let owner_id  = {
-        $in: [
+        $in: 
+        // [ObjectId(id)]
+        [
           ObjectId("651030bdcb9274e131c0bc78"),
           ObjectId("651030fbcb9274e131c0bc7e")
         ]

@@ -433,6 +433,7 @@ exports.get = async (req, res) => {
           path: "staff_id",
         },
       })
+      .sort({ _id: -1 })
       .lean()
       .exec();
     return res.send(custumer);
