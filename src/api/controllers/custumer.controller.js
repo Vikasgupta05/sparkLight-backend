@@ -26,6 +26,7 @@ exports.create = async (req, res) => {
         staff_id: item.staff_id,
         customerName : item.customerName,
         customerPhoneNo : item.customerPhoneNo,
+        owner_id : owner_id
       };
     });
 
@@ -380,15 +381,15 @@ exports.getStaff = async (req, res) => {
 //   } catch (err) {
 //     return res.status(500).send(err.message);
 //   }
-
-
-  
 // };
 
 
 
 exports.getServiceCount = async (req, res) => {
+  const SelectedDate = req.body.SelectedDate
+  const today = new Date();
   try {
+    const formattedToday = today.toISOString().split('T')[0];
     const testData = await Custumer.aggregate([
       {
         $lookup: {
@@ -402,6 +403,26 @@ exports.getServiceCount = async (req, res) => {
         $unwind: "$custumerServices",
       },
       {
+        $match: {
+          $expr: {
+            $eq: [
+              {
+                $dateToString: { format: "%Y-%m-%d", date: "$custumerServices.createdAt" }
+              },
+
+              {
+                $cond: {
+                  if: { $ne: [SelectedDate, ""] },
+                  then: SelectedDate,
+                  else: formattedToday
+                }
+              }
+            ]
+          }
+        },
+      },
+
+      {
         $group: {
           _id: "$custumerServices.serviceName",
           serviceType: { $first: "$custumerServices.serviceType" },
@@ -412,10 +433,14 @@ exports.getServiceCount = async (req, res) => {
           },
           serviceCreatedAt: { $min: "$custumerServices.createdAt" },
           serviceCount: { $sum: 1 },
-          
+          owner_id : { $first: "$custumerServices.owner_id" },
         },
       },
+      {
+        $sort: { _id: -1 } 
+      },
     ]);
+  
     res.status(httpStatus.CREATED);
     res.send(testData);
   } catch (err) {

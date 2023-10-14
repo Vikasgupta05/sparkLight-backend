@@ -14,8 +14,6 @@ exports.create = async (req, res) => {
   }
 };
 
-
-
 exports.get = async (req, res) => {
   const id = req?.params?.id
   try {
@@ -38,9 +36,6 @@ exports.update =  async (req, res) => {
   }
 };
 
-
-
-
 exports.delete = async (req, res) => {
   try {
     const _id = req.body._id;
@@ -59,9 +54,6 @@ exports.delete = async (req, res) => {
     return res.status(500).send(err.message);
   }
 };
-
-
-
 
 exports.getadminStaff = async (req, res) => {
   try {

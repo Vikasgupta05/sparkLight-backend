@@ -241,8 +241,6 @@ exports.adminRegister = async (req, res, next) => {
 
 exports.getAdminData = async (req, res) => {
   const id = req.body
-
-  console.log(id)
   try {
     let owner_id  = {
         $in: 

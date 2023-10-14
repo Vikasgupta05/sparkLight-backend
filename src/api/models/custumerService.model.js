@@ -14,6 +14,7 @@ const custumerServiceSchema = new mongoose.Schema(
       ref: "staff",
       required: true,   
     },
+    owner_id: { type: String }
     
   },
   {
