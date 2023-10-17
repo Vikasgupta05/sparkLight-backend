@@ -60,7 +60,13 @@ exports.getadminStaff = async (req, res) => {
     const today = new Date();
     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-  
+
+    
+    const startDate = new Date('2023-10-01'); // Replace with your start date
+    const endDate = new Date('2023-10-9'); // Replace with your end date
+
+
+    
     const id = req.body.id;
     const testData = await Staff.aggregate([
       {
@@ -78,14 +84,27 @@ exports.getadminStaff = async (req, res) => {
         },
       },
       {
-        $match: {
-          owner_id: {
-            $in: [
-              ObjectId("651030bdcb9274e131c0bc78"),
-              ObjectId("651030fbcb9274e131c0bc7e"),
-            ],
+        // $match: {
+        //   owner_id: {
+        //     $in: [
+        //       ObjectId("651030bdcb9274e131c0bc78"),
+        //       ObjectId("651030fbcb9274e131c0bc7e"),
+        //     ],
+        //   },
+        // },
+
+          $match: {
+            owner_id: {
+              $in: [
+                ObjectId("651030bdcb9274e131c0bc78"),
+                ObjectId("651030fbcb9274e131c0bc7e"),
+              ],
+            },
+            createdAt: {
+              $gte: startDate,
+              $lte: endDate,
+            },
           },
-        },
       },
       {
         $lookup: {

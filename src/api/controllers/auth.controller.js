@@ -242,12 +242,13 @@ exports.adminRegister = async (req, res, next) => {
 exports.getAdminData = async (req, res) => {
   const id = req.body
   try {
-    let owner_id  = {
-        $in: 
-        [
-          ObjectId("651030bdcb9274e131c0bc78"),
-          ObjectId("651030fbcb9274e131c0bc7e")
-        ]
+    const startDate = new Date('2023-10-01'); // Replace with your start date
+    const endDate = new Date('2023-10-13'); // Replace with your end date
+
+    const owners = await User.find({ role: 'owner' }).select('_id');
+
+      let owner_id  = {
+        $in: owners.map(user=>user._id)
       }
     const testDatas = await Custumer.aggregate([
       {
@@ -264,11 +265,22 @@ exports.getAdminData = async (req, res) => {
           preserveNullAndEmptyArrays: true 
         },
       },
+      // {
+      //   $match: {
+      //     owner_id: owner_id
+      //   }
+      // },
+
       {
         $match: {
-          owner_id: owner_id
-        }
+          owner_id: owner_id,
+          createdAt: {
+            $gte: startDate,
+            $lte: endDate,
+          },
+        },
       },
+
         {
           $group: {
             _id: "$owner_id",
@@ -312,7 +324,11 @@ exports.getAdminData = async (req, res) => {
 
       {
         $match: {
-          owner_id: owner_id
+          owner_id: owner_id,
+          createdAt: {
+            $gte: startDate,
+            $lte: endDate,
+          },
         }
       },
       {
