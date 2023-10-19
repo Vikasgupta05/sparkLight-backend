@@ -5,7 +5,6 @@ const httpStatus = require("http-status");
 const mongoose = require("mongoose");
 const express = require('express');
 const bodyParser = require('body-parser');
-const Razorpay = require('razorpay');
 const { ObjectId } = require('mongodb');
 const { sendMsg } = require("../utils/msgSend");
 
@@ -480,30 +479,7 @@ exports.update =  async (req, res) => {
 };
 
 
-const razorpay = new Razorpay({
-  key_id: 'rzp_test_vpd9CKdcgZ4h10', 
-  key_secret: 'Zd2RFfoXZRzMgunduNKZvLBR' 
-});
 
-exports.razerpay = async (req, res) => {
-  try {
- 
-    const options = {
-      amount: 50000, // Amount in paise (50.00 INR)
-      currency: 'INR',
-    };
-
-    razorpay.orders.create(options, (err, order) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-      return res.send(order);
-    });  
-   
-  } catch (err) {
-    return res.status(500).send(err.message);
-  }
-};
 
 
 exports.delete = async (req, res) => {
