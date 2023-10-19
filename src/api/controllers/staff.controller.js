@@ -1,7 +1,9 @@
 const Staff = require("../models/staff.model");
-const httpStatus = require("http-status");
-const { ObjectId } = require('mongodb');
+const User = require("../models/client.model");
 
+
+const httpStatus = require("http-status");
+const { ObjectId } = require("mongodb");
 
 exports.create = async (req, res) => {
   try {
@@ -15,23 +17,24 @@ exports.create = async (req, res) => {
 };
 
 exports.get = async (req, res) => {
-  const id = req?.params?.id
+  const id = req?.params?.id;
   try {
-    const staff = await Staff.find()
+    const staff = await Staff.find();
     return res.send(staff);
   } catch (err) {
     return res.status(500).send(err.message);
   }
 };
 
-exports.update =  async (req, res) => {
-  try{
-    const staff = await Staff.findByIdAndUpdate(req.body._id,
-      { $set: { status: req.body.status }},
-      {new:true})
-    res.send(staff)
-  }
-  catch(err){
+exports.update = async (req, res) => {
+  try {
+    const staff = await Staff.findByIdAndUpdate(
+      req.body._id,
+      { $set: { status: req.body.status } },
+      { new: true }
+    );
+    res.send(staff);
+  } catch (err) {
     res.send(err.message);
   }
 };
@@ -43,7 +46,6 @@ exports.delete = async (req, res) => {
 
     if (staff) {
       return res.send(staff);
-
     } else {
       return res.json({
         status: "error",
@@ -59,15 +61,40 @@ exports.getadminStaff = async (req, res) => {
   try {
     const today = new Date();
     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    const lastDayOfMonth = new Date(
+      today.getFullYear(),
+      today.getMonth() + 1,
+      0
+    );
 
-    
-    const startDate = new Date('2023-10-01'); // Replace with your start date
-    const endDate = new Date('2023-10-9'); // Replace with your end date
+    const id = req.body;
+    const startDate = new Date(id.startDate);
+    const endDate = new Date(id.endDate);
+    let matchQuery = {};
+    const owners = await User.find({ role: "owner" }).select("_id");
+    let owner_id = {
+      $in: owners.map((user) => user._id),
+    };
 
+    if (startDate == "Invalid Date") {
+      matchQuery = {
+        owner_id: owner_id,
+        "custumerServices.createdAt": {
+          $gte: firstDayOfMonth,
+          $lte: lastDayOfMonth,
+        },
+        
+      };
+    } else {
+      matchQuery = {
+        owner_id: owner_id,
+        "custumerServices.createdAt": {
+          $gte: startDate,
+          $lte: endDate,
+        },
+      };
+    }
 
-    
-    const id = req.body.id;
     const testData = await Staff.aggregate([
       {
         $lookup: {
@@ -84,29 +111,6 @@ exports.getadminStaff = async (req, res) => {
         },
       },
       {
-        // $match: {
-        //   owner_id: {
-        //     $in: [
-        //       ObjectId("651030bdcb9274e131c0bc78"),
-        //       ObjectId("651030fbcb9274e131c0bc7e"),
-        //     ],
-        //   },
-        // },
-
-          $match: {
-            owner_id: {
-              $in: [
-                ObjectId("651030bdcb9274e131c0bc78"),
-                ObjectId("651030fbcb9274e131c0bc7e"),
-              ],
-            },
-            createdAt: {
-              $gte: startDate,
-              $lte: endDate,
-            },
-          },
-      },
-      {
         $lookup: {
           from: "custumerservices",
           localField: "_id",
@@ -121,13 +125,9 @@ exports.getadminStaff = async (req, res) => {
         },
       },
       {
-        $match: {
-          "custumerServices.createdAt": {
-            $gte: firstDayOfMonth,
-            $lte: lastDayOfMonth,
-          },
-        },
+        $match: matchQuery,
       },
+      
       {
         $group: {
           _id: "$_id",
@@ -163,15 +163,12 @@ exports.getadminStaff = async (req, res) => {
         },
       },
       {
-        $sort: { totalAmount: -1 } // Sort by totalAmount in descending order
+        $sort: { totalAmount: -1 },
       },
     ]);
-  
+
     return res.send(testData);
   } catch (err) {
     return res.status(500).send(err.message);
   }
 };
-
-
-

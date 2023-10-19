@@ -5,8 +5,7 @@ const jwt = require("jsonwebtoken");
 const httpStatus = require("http-status");
 const jwtToken = require("../utils/token");
 const nodemailer = require("nodemailer");
-const mongoose = require("mongoose");
-const { ObjectId } = require('mongodb');
+
 
 exports.register = async (req, res, next) => {
   try {
@@ -240,16 +239,32 @@ exports.adminRegister = async (req, res, next) => {
 };
 
 exports.getAdminData = async (req, res) => {
-  const id = req.body
+  const id = req.body;
   try {
-    const startDate = new Date('2023-10-01'); // Replace with your start date
-    const endDate = new Date('2023-10-13'); // Replace with your end date
+    const startDate = new Date(id.startDate);
+    const endDate = new Date(id.endDate);
 
-    const owners = await User.find({ role: 'owner' }).select('_id');
+    let matchQuery = {};
 
-      let owner_id  = {
-        $in: owners.map(user=>user._id)
-      }
+    const owners = await User.find({ role: "owner" }).select("_id");
+    let owner_id = {
+      $in: owners.map((user) => user._id),
+    };
+
+    if (startDate == "Invalid Date") {
+      matchQuery = {
+        owner_id: owner_id,
+      };
+    } else {
+      matchQuery = {
+        owner_id: owner_id,
+        createdAt: {
+          $gte: startDate,
+          $lte: endDate,
+        },
+      };
+    }
+
     const testDatas = await Custumer.aggregate([
       {
         $lookup: {
@@ -262,49 +277,36 @@ exports.getAdminData = async (req, res) => {
       {
         $unwind: {
           path: "$users",
-          preserveNullAndEmptyArrays: true 
+          preserveNullAndEmptyArrays: true,
         },
       },
-      // {
-      //   $match: {
-      //     owner_id: owner_id
-      //   }
-      // },
+      {
+        $match: matchQuery,
+      },
 
       {
-        $match: {
-          owner_id: owner_id,
-          createdAt: {
-            $gte: startDate,
-            $lte: endDate,
-          },
+        $group: {
+          _id: "$owner_id",
+          totalAmount: { $sum: { $toInt: "$custumerAmount" } },
+          walkin: { $sum: 1 },
+          ownerName: { $first: "$users.userName" },
+          bussinessName: { $first: "$users.bussinessName" },
+          city: { $first: "$users.city" },
         },
       },
 
-        {
-          $group: {
-            _id: "$owner_id",
-            totalAmount: { $sum: { $toInt: "$custumerAmount" } },
-            walkin: { $sum: 1 },
-            ownerName: { $first: "$users.userName" },
-            bussinessName: { $first: "$users.bussinessName" },
-            city: { $first: "$users.city" },
-          }
+      {
+        $project: {
+          owner_id: "$_id",
+          totalAmount: 1,
+          walkin: 1,
+          ownerName: 1,
+          bussinessName: 1,
+          city: 1,
+          _id: 0,
         },
-
-        {
-          $project: {
-            owner_id: "$_id",
-            totalAmount: 1,
-            walkin:1,
-            ownerName: 1,
-            bussinessName:1,
-            city: 1,
-            _id: 0
-          }
-        }
+      },
     ]);
-
 
     const topRevenue = await Custumer.aggregate([
       {
@@ -318,18 +320,12 @@ exports.getAdminData = async (req, res) => {
       {
         $unwind: {
           path: "$users",
-          preserveNullAndEmptyArrays: true 
+          preserveNullAndEmptyArrays: true,
         },
       },
 
       {
-        $match: {
-          owner_id: owner_id,
-          createdAt: {
-            $gte: startDate,
-            $lte: endDate,
-          },
-        }
+        $match: matchQuery,
       },
       {
         $group: {
@@ -339,27 +335,25 @@ exports.getAdminData = async (req, res) => {
           city: { $first: "$users.city" },
           totalAmount: { $sum: { $toInt: "$custumerAmount" } },
           walkin: { $sum: 1 },
-        }
+        },
       },
       {
         $match: {
-          totalAmount: { $gt: 3000 } 
-        }
+          totalAmount: { $gt: 3000 },
+        },
       },
       {
         $project: {
           owner_id: "$_id",
           ownerName: 1,
-          bussinessName:1,
+          bussinessName: 1,
           city: 1,
           totalAmount: 1,
           walkin: 1,
-          _id: 0
-        }
-      }
+          _id: 0,
+        },
+      },
     ]);
-    
-    
 
     const today = new Date();
     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -378,6 +372,7 @@ exports.getAdminData = async (req, res) => {
           },
         },
       },
+
       {
         $group: {
           _id: "$owner_id",
@@ -385,11 +380,9 @@ exports.getAdminData = async (req, res) => {
           walkinMonth: { $sum: 1 },
         },
       },
-      
     ]);
 
-
-    const formattedToday = today.toISOString().split('T')[0];
+    const formattedToday = today.toISOString().split("T")[0];
     const CurrentDayRevenue = await Custumer.aggregate([
       {
         $lookup: {
@@ -402,7 +395,7 @@ exports.getAdminData = async (req, res) => {
       {
         $unwind: {
           path: "$users",
-          preserveNullAndEmptyArrays: true 
+          preserveNullAndEmptyArrays: true,
         },
       },
 
@@ -412,11 +405,11 @@ exports.getAdminData = async (req, res) => {
           $expr: {
             $eq: [
               {
-                $dateToString: { format: "%Y-%m-%d", date: "$createdAt" }
+                $dateToString: { format: "%Y-%m-%d", date: "$createdAt" },
               },
-              formattedToday
-            ]
-          }
+              formattedToday,
+            ],
+          },
         },
       },
       {
@@ -430,74 +423,73 @@ exports.getAdminData = async (req, res) => {
         },
       },
     ]);
-    
 
     const totalMonthRavenue = CurrentMonthRevenue.reduce(
-      (total , item) => total + item.totalAmount,
-      0,
+      (total, item) => total + item.totalAmount,
+      0
     );
 
     const walkinMonth = CurrentMonthRevenue.reduce(
-      (total , item) => total + item.walkinMonth,
-      0,
+      (total, item) => total + item.walkinMonth,
+      0
     );
 
     const totalDayRavenue = CurrentDayRevenue.reduce(
-      (total , item) => total + item.totalAmount,
-      0,
+      (total, item) => total + item.totalAmount,
+      0
     );
 
     const walkinDay = CurrentDayRevenue.reduce(
-      (total , item) => total + item.walkinMonth,
-      0,
+      (total, item) => total + item.walkinMonth,
+      0
     );
 
     const totalRavenue = testDatas.reduce(
-      (total , item) => total + item.totalAmount,
-      0,
+      (total, item) => total + item.totalAmount,
+      0
     );
 
     const totalwalkin = testDatas.reduce(
-      (total , item) => total + item.walkin,
-      0,
+      (total, item) => total + item.walkin,
+      0
     );
 
-
-    return res.send([{
-      totalMonthRavenue,
-      totalRavenue,
-      walkinMonth,
-      totalwalkin,
-      totalDayRavenue,
-      walkinDay,
-      CurrentDayRevenue,
-      testDatas,
-      topRevenue
-    }]);
+    return res.send([
+      {
+        totalMonthRavenue,
+        totalRavenue,
+        walkinMonth,
+        totalwalkin,
+        totalDayRavenue,
+        walkinDay,
+        CurrentDayRevenue,
+        testDatas,
+        topRevenue,
+      },
+    ]);
   } catch (err) {
     return res.status(500).send(err.message);
   }
 };
 
-
 exports.get = async (req, res) => {
   try {
-    const user = await User.find()
+    const user = await User.find();
     return res.send(user);
   } catch (err) {
     return res.status(500).send(err.message);
   }
 };
 
-
-exports.update =  async (req, res) => {
-  try{
-    const user = await User.findByIdAndUpdate(req.body._id,
-      { $set: { ActiveStatus: req.body.ActiveStatus }},
-      {new:true})
-    res.send(user)
-  }
-  catch(err){
+exports.update = async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.body._id,
+      { $set: { ActiveStatus: req.body.ActiveStatus } },
+      { new: true }
+    );
+    res.send(user);
+  } catch (err) {
     res.send(err.message);
   }
 };
